@@ -15,6 +15,7 @@ function compose_email() {
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
+  document.querySelector('#email-detail-view').style.display = 'none';
 
   // Clear out composition fields
   document.querySelector('#compose-recipients').value = '';
@@ -50,6 +51,7 @@ function load_mailbox(mailbox) {
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
+  document.querySelector('#email-detail-view').style.display = 'none';
 
   // Show the mailbox name
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
@@ -69,6 +71,10 @@ function load_mailbox(mailbox) {
         ${email.subject}
         <span style="float: right;">${email.timestamp}</span>
       `;
+      emailDiv.addEventListener('click', () => {
+        load_email(email.id);
+      });
+      
       if (email.read) {
         emailDiv.style.backgroundColor = '#f0f0f0';
       }
@@ -77,5 +83,60 @@ function load_mailbox(mailbox) {
     });
   });
 
+}
+
+function load_email(id) {
+  // Show the email view and hide others
+  document.querySelector('#emails-view').style.display = 'none';
+  document.querySelector('#email-detail-view').style.display = 'block';
+  document.querySelector('#compose-view').style.display = 'none';
+
+  // Clear previous content
+  const detailView = document.querySelector('#email-detail-view');
+  detailView.innerHTML = '';
+
+  // Fetch the email
+  fetch(`/emails/${id}`)
+    .then(response => response.json())
+    .then(email => {
+      // Mark as read
+      if (!email.read) {
+        fetch(`/emails/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ read: true })
+        });
+      }
+
+      // Build email view
+      detailView.innerHTML = `
+        <strong>From:</strong> ${email.sender}<br>
+        <strong>To:</strong> ${email.recipients.join(', ')}<br>
+        <strong>Subject:</strong> ${email.subject}<br>
+        <strong>Timestamp:</strong> ${email.timestamp}<br><br>
+        <button class="btn btn-sm btn-outline-primary" id="reply-button">Reply</button>
+        <button class="btn btn-sm btn-outline-secondary" id="archive-button"></button>
+        <hr>
+        <p>${email.body.replace(/\n/g, '<br>')}</p>
+      `;
+
+      // Archive/Unarchive button
+      const archiveBtn = document.querySelector('#archive-button');
+      if (email.archived) {
+        archiveBtn.textContent = 'Unarchive';
+      } else {
+        archiveBtn.textContent = 'Archive';
+      }
+      archiveBtn.addEventListener('click', () => {
+        fetch(`/emails/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ archived: !email.archived })
+        }).then(() => load_mailbox('inbox'));
+      });
+
+      // Reply button logic (you’ll fill this later)
+      document.querySelector('#reply-button').addEventListener('click', () => {
+        reply_email(email);
+      });
+    });
 }
 
