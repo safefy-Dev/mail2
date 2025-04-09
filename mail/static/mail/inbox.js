@@ -118,6 +118,7 @@ function load_email(id) {
         <hr>
         <p>${email.body.replace(/\n/g, '<br>')}</p>
       `;
+      
 
       // Archive/Unarchive button
       const archiveBtn = document.querySelector('#archive-button');
@@ -133,10 +134,30 @@ function load_email(id) {
         }).then(() => load_mailbox('inbox'));
       });
 
-      // Reply button logic (you’ll fill this later)
+      
       document.querySelector('#reply-button').addEventListener('click', () => {
         reply_email(email);
       });
     });
 }
 
+function reply_email(email) {
+  // Show compose view
+  document.querySelector('#emails-view').style.display = 'none';
+  document.querySelector('#email-detail-view').style.display = 'none';
+  document.querySelector('#compose-view').style.display = 'block';
+
+  // Pre-fill fields
+  document.querySelector('#compose-recipients').value = email.sender;
+
+  // Add "Re:" to subject if it doesn't already start with it
+  let subject = email.subject;
+  if (!subject.startsWith('Re:')) {
+    subject = 'Re: ' + subject;
+  }
+  document.querySelector('#compose-subject').value = subject;
+
+  // Format original message in body
+  const quoted_body = `\n\nOn ${email.timestamp}, ${email.sender} wrote:\n${email.body}`;
+  document.querySelector('#compose-body').value = quoted_body;
+}
